@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>main</title>
+    <style>
+    </style>
+</head>
+<body style="text-align: center">
+<div style="margin-left: 30px; margin-right: 30px; width: auto">
+    <div>
+        <div style="text-align: left; float: left">
+            请输入你当前运行apk程序的手机ip地址：<input type="text" id="ip_adress" placeholder="you phone ip, ex:http://192.168.112.220"/>
+        </div>
+        <div style="float: left; margin-left: 10px">
+            <button id="search" style="width: 50px; background-color: dodgerblue">搜索</button>
+        </div>
+    </div>
+    <br/>
+    <div style="margin-top: 10px">
+        <div id="left_root"
+             style="float:left; background-color: #888888; width: 20%">
+            <div style="width: 100%; padding: 5px; background-color: brown"><a>数据库目录</a></div>
+            <div id="index_root" style="text-align: left; cursor: pointer"></div>
+        </div>
+        <div id="right_root" style="float: left; background-color: #b3d4fc; width: 80%;height: auto">
+            <div style="width: 100%; background-color: bisque; padding-top: 5px; padding-bottom: 5px"><a>主要数据</a></div>
+            <div id="text_current"
+                 style="width: 100%; height: 40px; text-align: left; line-height: 40px; margin-left: 10px; display: none"></div>
+            <div id="data_root"
+                 style="border-right: solid 1px #222222; border-bottom: solid 1px #222222; display: none">
+                <table id="table_data" border="0"
+                       style="width: 100%; height: auto; border-collapse: collapse; display: none; table-layout: auto"></table>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../js/simple_http.js"></script>
+<script type="text/javascript">
+    var leftRoot = document.getElementById("left_root");
+    var rightRoot = document.getElementById("right_root");
+    var httpUrl = "";
+    var rootElement = document.getElementById("index_root");
+    var searchBtn = document.getElementById("search")
+    if (searchBtn != null) { //判断是否是null或者undefined
+        searchBtn.onclick = function () {
+            httpUrl = document.getElementById("ip_adress").value;
+            if (isValidUrl(httpUrl)) {
+                httpAjax({
+                    "url": httpUrl + ":10000/database_table",
+                    "type": "GET",
+                    "data": {},
+                    "success": function (responseText, responseXML) {
+                        //删除旧的element.
+                        if (rootElement.childElementCount > 0) { //已经拥有元素了
+                            rootElement.removeChild(rootElement.firstElementChild)
+                        }
+                        console.log("responseText: " + responseText);
+                        var jsonObj = JSON.parse(responseText);
+                        if (jsonObj.code == 0) { // success
+                            var dataList = jsonObj.data;
+                            addListElement(dataList);
+                        }
+                    },
+                    "failure": function (statucode) {
+                        console.log("failure");
+                    }
+                })
+            }
+        }
+    }
+    var databaseNum = [];
+    function addListElement(list) {
+        //   child = document.createTextNode(cell.name) //该种方式只会在标签后面添加值，但是不会成为p等标签
+        var listElement = document.createElement("ul");
+        for (var i = 0; i < list.length; i++) {
+            var li = document.createElement("li");
+            var databaseObj = list[i];
+            li.index = i;
+            for (var database in databaseObj) { //这里只会有一个db
+                var dbElement = document.createElement("a");
+                dbElement.style.cssText = "color:black;font-size: 14px";
+                dbElement.innerHTML = database;
+                databaseNum.push(database);
+                dbElement.onclick = function () {
+                    var childContainer = dbElement.parentNode.lastChild;
+                    if (childContainer.style.display.length == 0) { //显示
+                        childContainer.style.display = "none";
+                    } else {
+                        childContainer.style.display = "";
+                    }
+                }
+                li.appendChild(dbElement);
+                var tableJson = databaseObj[database];
+                var tableContainer = document.createElement("div")
+                tableContainer.style.cssText = "text-align:left; padding:0px; height:auto";
+                for (var j = 0; j < tableJson.length; j++) {
+                    var tableObj = tableJson[j];
+                    var tableElement = document.createElement("u");
+                    tableElement.index = j;
+                    tableElement.innerHTML = tableObj.name;
+                    tableElement.style.cssText = "margin-left: 10px; color:black;font-size: 12px";
+                    tableElement.onclick = function () {
+                        var databaseName = databaseNum[this.parentNode.parentNode.index];
+                        var tableName = this.innerHTML;
+                        requestTableData(databaseName, tableName);
+                    }
+                    tableContainer.appendChild(tableElement);
+                    var seperateLine = document.createElement("br");
+                    tableContainer.appendChild(seperateLine);
+                }
+                li.appendChild(tableContainer)
+                listElement.appendChild(li);
+            }
+        }
+        rootElement.appendChild(listElement);
+    }
+
+    var currentDatabaseName;
+    var currentTableName;
+    function requestTableData(dbName, tableName) {
+        currentTableName = tableName;
+        currentDatabaseName = dbName;
+        var success = function (responseText, responseXML) {
+            console.log("success: " + responseText);
+            var currentElement = document.getElementById("text_current");
+            currentElement.style.display = "";
+            console.log("response: " + responseText);
+            var responseObj = JSON.parse(responseText);
+            if (responseObj.code == 0 && responseObj.data.length > 0) {
+                currentElement.innerHTML = "当前位置: " + currentDatabaseName + "/" + currentTableName;
+                createTable(responseObj.data);
+            } else {
+                currentElement.innerHTML = "请求错误，请重试";
+            }
+        };
+        var failure = function (statusCode) {
+            console.log("failure: " + statusCode);
+        }
+
+        var requestJson = {
+            "url": httpUrl + ":10000/data",
+            "type": "GET",
+            "data": {"database": dbName, "table": tableName},
+            "success": success,
+            "failure": failure
+        };
+        if (isValidUrl(httpUrl)) {
+            httpAjax(requestJson)
+        }
+    }
+
+    var cssTable = "border-top: solid 1px #222222;border-left: solid 1px #222222; min-width:50px";
+    function createTable(dataList) {
+        var tableDiv = document.getElementById("data_root");
+        tableDiv.style.display = "";
+        var tableElement = document.getElementById("table_data");
+        tableElement.innerHTML = ""; //移除所有的布局
+        tableElement.style.display = ""; //显示
+//        var tableWidth = document.defaultView.getComputedStyle(rightRoot, null).width;
+//        console.log("tableWidth" + tableWidth);
+//        var patten = new RegExp("^[0-9]+\.{0,1}[0-9]+", "g");
+//        tableWidth = patten.exec(tableWidth);
+        //先创建表头
+        var simple = dataList[0];
+        var headerElement = document.createElement("tr");
+        for (var name in simple) {
+            var thElement = document.createElement("th");
+            thElement.innerHTML = name;
+            thElement.style.cssText = cssTable;
+            headerElement.appendChild(thElement);
+        }
+        tableElement.appendChild(headerElement);
+        for (var i = 0; i < dataList.length; i++) {
+            var entity = dataList[i];
+            var trElement = document.createElement("tr");
+            for (var keyName in entity) {
+                var tdElement = document.createElement("td");
+                tdElement.innerHTML = entity[keyName];
+                tdElement.style.cssText = cssTable;
+                trElement.appendChild(tdElement);
+            }
+            tableElement.appendChild(trElement);
+        }
+        changeLeftRootHeight();
+        changeTableColumn(tableElement);
+    }
+
+    function changeLeftRootHeight() {
+        var height = document.defaultView.getComputedStyle(rightRoot, null).height; //通过该种方式获取元素高度100px
+        leftRoot.style.height = height;
+    }
+    var cell;
+    function changeTableColumn(table) {
+        for (var j = 0; j < table.rows[0].cells.length; j++) {
+            table.rows[0].cells[j].onmousedown = function () {
+                cell = this; //调用该方法的对象
+                // offsetX 相对当前元素的内部相对位置.
+                //offsetWidth 元素的宽度，包括width + border+padding
+                if (event.offsetX > cell.offsetWidth - 10) {
+                    cell.mouseDown = true;
+                    cell.oldx = event.x;
+                    cell.oldWidth = cell.offsetWidth;
+                }
+            }
+            table.rows[0].cells[j].onmouseup = function () {
+                if (cell == undefined){
+                    cell = this;
+                }
+                cell.mouseDown = false;
+                cell.style.cursor = 'default';
+            }
+            table.rows[0].cells[j].onmousemove = function () {
+                if (event.offsetX > this.offsetWidth - 10) {
+                    this.style.cursor = 'col-resize';
+                } else {
+                    this.style.cursor = 'default';
+                }
+                if (cell == undefined) {
+                    cell = this;
+                }
+                if (cell.mouseDown != null && cell.mouseDown == true) {
+                    cell.style.cursor = 'default';
+                    if(cell.oldWidth + (event.x - cell.oldx) > 0){
+                       cell.width = cell.oldWidth + (event.x - cell.oldx);
+                    }
+                    cell.style.width = cell.width;
+                    cell.style.cursor = 'col-resize';
+                    for (var i = 0; i < table.rows.length; i++){
+                        table.rows[i].cells[cell.cellIndex].width =   cell.width;// cell.cellIndex 返回一行cell中的位置.
+                        changeLeftRootHeight();
+                    }
+                }
+            }
+        }
+    }
+
+    function isValidUrl(httpurl) {
+        httpurl = httpurl.match(/http:\/\/.+/);
+        if (httpurl == null) {
+            alert('你输入的URL无效');
+            return false;
+        } else {
+            return true;
+        }
+    }
+</script>
+</body>
+</html>
