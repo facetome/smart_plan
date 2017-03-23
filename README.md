@@ -5,7 +5,7 @@ you can download the project and import the library to you project, this is very
 <br/>`compile project(':library')` and sync you your proect by gradle.<br/>
 ## 2.how to use
 now you have configuration you project and we can coding. is very simple ,you just coding this in your first activity.<br/>
-`SmartPlan.startPlan(MainActivity.this);` in onCreate() and <br/> ` SmartPlan.stopPlan(MainActivity.this);` in you onDestory <br/>
+`SmartPlan.startPlan(MainActivity.this);` in onCreate() and <br/> ` SmartPlan.stopPlan(MainActivity.this);` in onDestory() <br/>
  and then, you need to coding this in you AndroidManifest.xml <br/>
 `<service android:name="com.basic.android.library.server.AndroidServerService"android:exported="false" />`
 </br>
