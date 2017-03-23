@@ -1,5 +1,5 @@
 # smart_plan
-this is a simple library can search database from your android device which can not root 
+this is a simple library can search database from your android device which can not root,but it is just for debug mode,when you  pack your app, you may remove it from your project.
 ## 1.how to dependence the library
 you can download the project and import the library to you project, this is very simple , i think you can do it.
 <br/>`compile project(':library')` and sync you your proect by gradle.<br/>
