@@ -14,4 +14,4 @@ ok, we have complete our work in android and we can run the main.html in web_pla
 input your devices ip in editext and you can see your database and table in web！<br/>
 at the last! importantly,you must keep your android devices and the html web run in a same network(Local area network)! 
 <br/>ok, click search and you can see it：
-![image](https://github.com/facetome/smart_plan/web_plan/src/img/smart_test.png)
+![image](https://github.com/facetome/smart_plan/raw/master/web_plan/src/img/smart_test.png)
